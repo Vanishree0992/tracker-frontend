@@ -1,61 +1,61 @@
-import { useState, useContext } from "react";
-import { AuthContext } from "../context/AuthContext";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import API from "../api/axios";
 
-const Login = () => {
-  const { login } = useContext(AuthContext);
+export default function Dashboard() {
+  const [projects, setProjects] = useState([]);
   const navigate = useNavigate();
 
-  
-  const [formData, setFormData] = useState({ 
-    username: "", password: "" 
-  });
-  const [error, setError] = useState("");
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
-    try {
-      await login(formData.username, formData.password);
-      navigate("/"); // Redirect to TodoList after login
-    } catch (err) {
-      setError(err.response?.data.detail || "Login failed");
-    }
-  };
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const res = await API.get("projects/");
+        console.log("Projects response:", res.data);
+        setProjects(res.data);
+      } catch (err) {
+        console.error("Error fetching projects:", err.response || err);
+        localStorage.clear();
+        navigate("/login");
+      }
+    };
+    fetchProjects();
+  }, [navigate]);
 
   return (
-    <div className="flex justify-center items-center h-screen bg-gray-100">
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded shadow w-96">
-        <h2 className="text-2xl font-bold mb-4 text-center">Login</h2>
-        {error && <p className="text-red-500 mb-2">{error}</p>}
-        <input
-          type="text"
-          name="username"
-          placeholder="Username"
-          value={formData.username}
-          onChange={handleChange}
-          className="w-full p-2 mb-4 border rounded"
-          required
-        />
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          value={formData.password}
-          onChange={handleChange}
-          className="w-full p-2 mb-4 border rounded"
-          required
-        />
-        <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
-          Login
-        </button>
-      </form>
+    <div className="min-h-screen bg-pink-50 p-8">
+      <h1 className="text-4xl font-extrabold mb-8 text-purple-700">My Dashboard</h1>
+
+      {projects.length === 0 ? (
+        <p className="text-gray-500 text-lg">No projects assigned yet.</p>
+      ) : (
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          {projects.map((proj) => (
+            <div
+              key={proj.id}
+              className="bg-white rounded-2xl shadow-lg p-6 transform transition duration-500 hover:scale-105 hover:shadow-2xl"
+            >
+              <h2 className="text-2xl font-semibold text-purple-600">{proj.title}</h2>
+              <p className="text-gray-600 mt-2">{proj.description}</p>
+
+              <p className="text-sm text-gray-500 mt-3">
+                <span className="font-medium text-purple-500">Trainer:</span> {proj.trainer_name} |{" "}
+                <span className="font-medium text-purple-500">Trainee:</span> {proj.trainee_name}
+              </p>
+
+              {/* Animated Pastel Progress Bar */}
+              <div className="w-full bg-purple-100 rounded-full h-4 mt-5 overflow-hidden">
+                <div
+                  className="h-4 rounded-full bg-gradient-to-r from-pink-300 via-yellow-200 to-green-300 transition-all duration-1000 ease-out animate-progress"
+                  style={{ width: `${proj.progress}%` }}
+                ></div>
+              </div>
+              <p className="text-right text-sm mt-2 text-purple-500 font-semibold">
+                {proj.progress}% complete
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
-};
-
-export default Login;
+}
